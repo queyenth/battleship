@@ -52,7 +52,7 @@ struct Coord {
 
 struct Ship {
     coord: Coord,
-    cells: Vec<Coord> 
+    cells: Vec<Coord>
 }
 
 fn init_colors() {
@@ -82,7 +82,7 @@ fn get_input() -> i32 {
     getch()
 }
 
-fn print_field(field: &mut [[Cell, ..10], ..10], y: i32, x: i32) {
+fn print_field(field: [[Cell, ..10], ..10], y: i32, x: i32) {
     mv(y, x+2i32);
     for i in range(1u, 11u) {
         printw(format!(" {}", i).as_slice());
@@ -106,7 +106,7 @@ fn print_field(field: &mut [[Cell, ..10], ..10], y: i32, x: i32) {
     }
 }
 
-fn add_ship(field: &mut [[Cell, ..10], ..10], ship: Ship) {
+fn add_ship(field: &mut [[Cell, ..10], ..10], ship: &Ship) {
     let y = ship.coord.y;
     let x = ship.coord.x;
     for i in ship.cells.iter() {
@@ -116,7 +116,7 @@ fn add_ship(field: &mut [[Cell, ..10], ..10], ship: Ship) {
     }
 }
 
-fn remove_ship(field: &mut [[Cell, ..10], ..10], ship: Ship) {
+fn remove_ship(field: &mut [[Cell, ..10], ..10], ship: &Ship) {
     let y = ship.coord.y;
     let x = ship.coord.x;
     for i in ship.cells.iter() {
@@ -126,7 +126,7 @@ fn remove_ship(field: &mut [[Cell, ..10], ..10], ship: Ship) {
     }
 }
 
-fn rotate_ship(ship: Ship) {
+fn rotate_ship(ship: &mut Ship) {
     for i in range(0u, ship.cells.len()) {
         let temp = ship.cells[i].y;
         ship.cells[i].y = ship.cells[i].x;
@@ -134,68 +134,70 @@ fn rotate_ship(ship: Ship) {
     }
 }
 
-fn place_ship(field: &mut [[Cell, ..10], ..10], ship: Ship) {
-    add_ship(field, ship);
-}
-
-fn move_ship(field: &mut [[Cell, ..10], ..10], ship: Ship, input: i32) -> bool {
-    remove_ship(field, ship);
-    let KEY_SPACE = ' ' as i32;
+fn move_ship(field: &mut [[Cell, ..10], ..10], ship: &mut Ship, input: i32) -> bool {
+    remove_ship(field, &*ship);
+    let mut x = ship.coord.x;
+    let mut y = ship.coord.y;
     match input {
         KEY_LEFT =>  {
+            if field[y][x-1].Type == SHIP {
+                return false;
+            }
             ship.coord.x-=1;
         }
         KEY_UP =>  {
+            if field[y-1][x].Type == SHIP {
+                return false;
+            }
             ship.coord.y-=1;
         }
         KEY_DOWN =>  {
+            if field[y+1][x].Type == SHIP {
+                return false;
+            }
             ship.coord.y+=1;
         }
         KEY_RIGHT =>  {
+            if field[y][x+1].Type == SHIP {
+                return false;
+            }
             ship.coord.x+=1;
         }
         KEY_ENTER => {
-            place_ship(field, ship);
+            add_ship(field, &*ship);
             return true;
         }
-        KEY_SPACE => {
+        _ => {
             rotate_ship(ship);
         }
     }
-    add_ship(field, ship);
+    add_ship(field, &*ship);
     return false;
 }
 
 fn main() {
     initialize();
 
-    let mut userfield = &mut [[Cell { Type : EMPTY, Color : WHITE }, ..10], ..10];
-    let mut enemyfield = &mut [[Cell { Type : EMPTY, Color : WHITE }, ..10], ..10];
+    let mut userfield = [[Cell { Type : EMPTY, Color : WHITE }, ..10], ..10];
+    let mut enemyfield = [[Cell { Type : EMPTY, Color : WHITE }, ..10], ..10];
 
-    let mut oneship = Ship {
+    let oneship : Ship = Ship {
         coord : Coord {y : 0u, x : 0u},
-        cells : vec!{ Coord {y : 0u, x : 0u}}
+        cells : vec![ Coord {y : 0u, x : 0u}]
     };
 
-    let mut twoship = Ship {
+    let twoship : Ship = Ship {
         coord : Coord {y : 0u, x : 0u},
-        cells : vec!{ Coord {y : 0u, x : 0u},
-                      Coord {y : 1u, x : 0u}}
+        cells : vec![ Coord {y : 0u, x : 0u},
+                      Coord {y : 1u, x : 0u}]
     };
 
-    let mut threeship = Ship {
+    let fourship : Ship = Ship {
         coord : Coord {y : 1u, x : 0u},
-        cells : vec!{ Coord {y : -1u, x : 0u},
-                      Coord {y : 0u, x : 0u},
-                      Coord {y : 1u, x : 0u}}
-    };
-
-    let mut fourship = Ship {
-        coord : Coord {y : 1u, x : 0u},
-        cells : vec!{ Coord {y : -1u, x : 0u},
+        cells : vec![ Coord {y : -1u, x : 0u},
                       Coord {y : 0u, x : 0u},
                       Coord {y : 1u, x : 0u},
-                      Coord {y : 2u, x : 0u}}
+                      Coord {y : 2u, x : 0u}]
     };
 
 
@@ -210,16 +212,28 @@ fn main() {
     let mut ch = getch();
     let mut curShip : Ship = fourship;
     while ch != ('q' as i32) {
-        if (move_ship(userfield, curShip, ch)) {
+        if (move_ship(&mut userfield, &mut curShip, ch)) {
             count+=1;
             if count <= 2 {
-                curShip = threeship;
+                curShip = Ship {
+                    coord : Coord {y : 1u, x : 0u},
+                    cells : vec![ Coord {y : -1u, x : 0u},
+                                  Coord {y : 0u, x : 0u},
+                                  Coord {y : 1u, x : 0u}]
+                };
             }
             else if count <= 5 {
-                curShip = twoship;
+                curShip = Ship { 
+                    coord : Coord {y : 0u, x : 0u},
+                    cells : vec![ Coord {y : 0u, x : 0u},
+                                  Coord {y : 1u, x : 0u}]
+                };
             }
             else if count <= 9 {
-                curShip = oneship;
+                curShip = Ship {
+                    coord : Coord {y : 0u, x : 0u},
+                    cells : vec![ Coord {y : 0u, x : 0u}]
+                }; 
             }
         }
 
