@@ -4,5 +4,8 @@ name = "battleship"
 version = "0.0.1"
 authors = ["Queyenth <queyenth@gmail.com>"]
 
+[dependencies]
+rand = "*"
+
 [dependencies.ncurses]
 git = "https://github.com/jeaye/ncurses-rs"
